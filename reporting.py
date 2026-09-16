@@ -15,8 +15,6 @@ Produce:
 
 Los candidatos son señales de triage para revisión de Finanzas, no anomalías
 confirmadas.
-
-Convención: documentación en español, código e identificadores en inglés.
 """
 
 from __future__ import annotations
