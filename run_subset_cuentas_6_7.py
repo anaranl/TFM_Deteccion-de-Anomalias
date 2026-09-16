@@ -9,11 +9,6 @@ restrictivo: LSTM-AE, ventana W=12).
 
 Ajustado al codigo real de: db.py, features_l2.py, autoencoder.py,
 lstm_autoencoder.py y baseline.py.
-
-Unico supuesto que no pude verificar: que la vista notif.vw_ML_L2_CompleteSeries
-incluye la columna 'no_movement' (la usa baseline.robust_zscore para filtrar
-periodos activos al calcular la mediana/MAD de referencia). Si tu vista no la
-trae con ese nombre exacto, ajusta la consulta SQL o el nombre de columna.
 """
 
 import pandas as pd
@@ -47,7 +42,7 @@ print(f"Cuentas distintas: {df_clean['account'].nunique()}")
 # -----------------------------------------------------------------------
 # 2. Determinar las 283 cuentas validas para LSTM-AE (W=12), el umbral
 #    mas restrictivo, para que los 3 modelos usen exactamente la misma
-#    poblacion (igual que verificamos antes con el conteo manual)
+#    poblacion
 # -----------------------------------------------------------------------
 periodos_por_cuenta = df_clean.groupby("account").size()
 UMBRAL_LSTM = 13  # W=12 + al menos 1 periodo para puntuar
@@ -65,8 +60,8 @@ df_final = df_clean[df_clean["account"].isin(cuentas_comunes)].copy()
 
 
 # -----------------------------------------------------------------------
-# 3. Split temporal + fit del FeatureBuilder SOLO con train, pasando
-#    explicitamente las 283 cuentas (featurize-then-cut, sin fuga)
+# 3. Split temporal + fit del FeatureBuilder SOLO con train
+#  
 # -----------------------------------------------------------------------
 MESES_TEST = 6   # mismo criterio usado con la poblacion completa
 ultimo_periodo = df_final["period_date"].max()
@@ -124,7 +119,7 @@ def scorer_robust_z(df):
     return out
 
 def scorer_ae(df):
-    Xt = fb.transform(df)                     # re-featurizar SIN reajustar
+    Xt = fb.transform(df)                     # re-featurizar sin reajustar
     scored = ae.score_frame(Xt)               # ya trae account, period_name, recon_error
     return scored.rename(columns={"recon_error": "score"})[["account", "period_name", "score"]]
 
@@ -134,7 +129,7 @@ scorer_lstm = make_lstm_scorer(fb, lstm_ae, series_keys=["account"], period_col=
 
 # -----------------------------------------------------------------------
 # 7. Evaluar los 3 detectores con el mismo arnes de inyeccion sintetica,
-#    sobre EXACTAMENTE el mismo df_final (283 cuentas)
+#    sobre el mismo df_final (283 cuentas)
 # -----------------------------------------------------------------------
 cfg = InjectionConfig(n_injections=60, n_repeats=5)
 
